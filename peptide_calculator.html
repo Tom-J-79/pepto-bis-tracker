@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+  <title>PepLog</title>
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PepLog">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0f1419">
+  <meta name="description" content="PepLog — peptide reconstitution, dosage calculator and dose logger">
+
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%233b82f6'/><text y='68' x='50' text-anchor='middle' font-size='52' fill='white' font-family='system-ui'>P</text></svg>">
+
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --text-muted: #8b9bb4;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 12px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      line-height: 1.5;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 6px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 10px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .tab:hover { border-color: var(--accent); color: var(--text); }
+    .tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .field input, .field select, .field textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 1rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent);
+    }
+    .unit-row {
+      display: flex;
+      gap: 8px;
+    }
+    .unit-row input { flex: 1; }
+    .unit-row select { width: 90px; flex-shrink: 0; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+    .btn-danger:hover { background: var(--danger); color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .result-box {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .result-box .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #60a5fa;
+      line-height: 1.2;
+    }
+    .result-box .label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-top: 4px;
+    }
+    .syringe-visual {
+      margin-top: 20px;
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+    .syringe-bar {
+      height: 28px;
+      background: #1e293b;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .syringe-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      border-radius: 5px;
+      transition: width 0.3s ease;
+      max-width: 100%;
+    }
+    .syringe-marks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    tr:hover td { background: rgba(59, 130, 246, 0.05); }
+    .empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 32px 16px;
+      font-size: 0.95rem;
+    }
+    .peptide-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .peptide-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .peptide-item .info h3 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .peptide-item .info p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .peptide-item .btns {
+      display: flex;
+      gap: 8px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .math-box {
+      margin-top: 16px;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      border: 1px solid var(--border);
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .results { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>PepLog</h1>
+      <p>Reconstitution • Dosage • Tracking</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="calc">Calculator</button>
+      <button class="tab" data-tab="peptides">My Peptides</button>
+      <button class="tab" data-tab="log">Dose Log</button>
+    </div>
+
+    <div id="calc" class="panel active">
+      <div class="card">
+        <h2>Reconstitution & Dose</h2>
+        <div class="grid">
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Peptide Name (optional)</label>
+            <input type="text" id="peptideName" placeholder="e.g. BPC-157, Tirzepatide…">
+          </div>
+          <div class="field">
+            <label>Vial Amount</label>
+            <div class="unit-row">
+              <input type="number" id="vialAmount" value="5" min="0" step="any">
+              <select id="vialUnit">
+                <option value="mg">mg</option>
+                <option value="mcg">mcg</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>BAC Water</label>
+            <div class="unit-row">
+              <input type="number" id="waterMl" value="2" min="0" step="any">
+              <select disabled><option>mL</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Desired Dose</label>
+            <div class="unit-row">
+              <input type="number" id="doseAmount" value="250" min="0" step="any">
+              <select id="doseUnit">
+                <option value="mcg">mcg</option>
+                <option value="mg">mg</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="results" id="results">
+          <div class="result-box">
+            <div class="value" id="resConc">—</div>
+            <div class="label">Concentration</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resUnits">—</div>
+            <div class="label">Draw Units</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resVol">—</div>
+            <div class="label">Volume (mL)</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resDoses">—</div>
+            <div class="label">Doses / Vial</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resPerUnit">—</div>
+            <div class="label">mcg / Unit</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resTotal">—</div>
+            <div class="label">Total mcg</div>
+          </div>
+        </div>
+
+        <div class="syringe-visual">
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">U-100 Syringe Preview</div>
+          <div class="syringe-bar">
+            <div class="syringe-fill" id="syringeFill" style="width:0%"></div>
+          </div>
+          <div class="syringe-marks">
+            <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+          </div>
+        </div>
+
+        <div class="math-box" id="mathBox">Enter values to see the math.</div>
+
+        <div class="actions">
+          <button class="btn btn-primary" onclick="calculate()">Calculate</button>
+          <button class="btn btn-secondary" onclick="saveCurrentPeptide()">Save Peptide</button>
+          <button class="btn btn-secondary" onclick="logCurrentDose()">Log This Dose</button>
+          <button class="btn btn-secondary" onclick="resetCalc()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="peptides" class="panel">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin:0;">Saved Peptides</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importPeptidesFile').click()">Import</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportPeptides()">Export</button>
+            <input type="file" id="importPeptidesFile" accept=".json,application/json,text/plain" style="display:none">
+          </div>
+        </div>
+        <div id="peptideList" class="peptide-list">
+          <div class="empty">No saved peptides yet. Calculate one and hit “Save Peptide”.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="log" class="panel">
+      <div class="card">
+        <h2>Log a Dose</h2>
+        <div class="grid">
+          <div class="field">
+            <label>Peptide</label>
+            <select id="logPeptideSelect">
+              <option value="">— Custom / Manual —</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Name (if custom)</label>
+            <input type="text" id="logName" placeholder="Peptide name">
+          </div>
+          <div class="field">
+            <label>Dose</label>
+            <div class="unit-row">
+              <input type="number" id="logDose" value="250" min="0" step="any">
+              <select id="logDoseUnit">
+                <option value="mcg">mcg</option>
+                <option value="mg">mg</option>
+              </select>
+            </div>
+            <div class="hint" id="logSyncHint">Dose and units stay in proportion once a ratio is set.</div>
+          </div>
+          <div class="field">
+            <label>Units Drawn</label>
+            <input type="number" id="logUnits" min="0" step="any" placeholder="optional">
+          </div>
+          <div class="field">
+            <label>Date & Time</label>
+            <input type="datetime-local" id="logDate">
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Notes</label>
+            <textarea id="logNotes" rows="2" placeholder="Optional notes…"></textarea>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="addLogEntry()">Add to Log</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin:0;">History</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importLogFile').click()">Import CSV</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportLog()">Export CSV</button>
+            <button class="btn btn-danger btn-sm" onclick="clearLog()">Clear Log</button>
+            <input type="file" id="importLogFile" accept=".csv,text/csv,text/plain" style="display:none">
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Peptide</th>
+                <th>Dose</th>
+                <th>Units</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody">
+              <tr><td colspan="6" class="empty">No doses logged yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let peptides = JSON.parse(localStorage.getItem('peptide_calc_peptides') || '[]');
+    let logEntries = JSON.parse(localStorage.getItem('peptide_calc_log') || '[]');
+    let logMcgPerUnit = null;
+    let syncingLog = false;
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+        if (tab.dataset.tab === 'peptides') renderPeptides();
+        if (tab.dataset.tab === 'log') {
+          renderLogSelect();
+          renderLog();
+        }
+      });
+    });
+
+    function toMcg(amount, unit) {
+      return unit === 'mg' ? amount * 1000 : amount;
+    }
+    function fromMcg(mcg, unit) {
+      return unit === 'mg' ? mcg / 1000 : mcg;
+    }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+    function saveState() {
+      localStorage.setItem('peptide_calc_peptides', JSON.stringify(peptides));
+      localStorage.setItem('peptide_calc_log', JSON.stringify(logEntries));
+    }
+    function fmt(n, d = 2) {
+      if (n == null || isNaN(n)) return '—';
+      return Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
+    }
+    function niceNum(n, maxDec = 4) {
+      if (n == null || isNaN(n)) return '';
+      const rounded = Math.round(n * Math.pow(10, maxDec)) / Math.pow(10, maxDec);
+      return String(rounded);
+    }
+    function mcgPerUnitFromMix(vialAmount, vialUnit, waterMl) {
+      const water = parseFloat(waterMl);
+      const total = toMcg(parseFloat(vialAmount) || 0, vialUnit);
+      if (!(water > 0) || !(total > 0)) return null;
+      return (total / water) / 100;
+    }
+    function updateSyncHint() {
+      const hint = document.getElementById('logSyncHint');
+      if (!hint) return;
+      if (logMcgPerUnit) {
+        hint.textContent = 'Linked: ' + fmt(logMcgPerUnit, 2) + ' mcg per unit. Change one and the other follows.';
+      } else {
+        hint.textContent = 'Select a saved peptide, log from the calculator, or fill both fields once to lock the ratio.';
+      }
+    }
+
+    function calculate() {
+      const vialAmt = parseFloat(document.getElementById('vialAmount').value) || 0;
+      const vialUnit = document.getElementById('vialUnit').value;
+      const water = parseFloat(document.getElementById('waterMl').value) || 0;
+      const doseAmt = parseFloat(document.getElementById('doseAmount').value) || 0;
+      const doseUnit = document.getElementById('doseUnit').value;
+
+      if (vialAmt <= 0 || water <= 0 || doseAmt <= 0) {
+        document.getElementById('resConc').textContent = '—';
+        document.getElementById('resUnits').textContent = '—';
+        document.getElementById('resVol').textContent = '—';
+        document.getElementById('resDoses').textContent = '—';
+        document.getElementById('resPerUnit').textContent = '—';
+        document.getElementById('resTotal').textContent = '—';
+        document.getElementById('syringeFill').style.width = '0%';
+        document.getElementById('mathBox').textContent = 'Enter positive values for vial, water, and dose.';
+        return;
+      }
+
+      const totalMcg = toMcg(vialAmt, vialUnit);
+      const doseMcg = toMcg(doseAmt, doseUnit);
+      const concMcgMl = totalMcg / water;
+      const concMgMl = concMcgMl / 1000;
+      const volMl = doseMcg / concMcgMl;
+      const units = volMl * 100;
+      const doses = Math.floor(totalMcg / doseMcg);
+      const mcgPerUnit = concMcgMl / 100;
+
+      document.getElementById('resConc').textContent = fmt(concMgMl, 3) + ' mg/mL';
+      document.getElementById('resUnits').textContent = fmt(units, 1) + ' u';
+      document.getElementById('resVol').textContent = fmt(volMl, 4);
+      document.getElementById('resDoses').textContent = doses;
+      document.getElementById('resPerUnit').textContent = fmt(mcgPerUnit, 2);
+      document.getElementById('resTotal').textContent = fmt(totalMcg, 0);
+
+      const fillPct = Math.min((units / 100) * 100, 100);
+      document.getElementById('syringeFill').style.width = fillPct + '%';
+
+      document.getElementById('mathBox').innerHTML =
+        `Total = <b>${fmt(totalMcg,0)} mcg</b><br>` +
+        `Concentration = ${fmt(totalMcg,0)} ÷ ${water} mL = <b>${fmt(concMcgMl,1)} mcg/mL</b> (${fmt(concMgMl,3)} mg/mL)<br>` +
+        `Volume = ${fmt(doseMcg,0)} mcg ÷ ${fmt(concMcgMl,1)} = <b>${fmt(volMl,4)} mL</b><br>` +
+        `Units (U-100) = ${fmt(volMl,4)} × 100 = <b>${fmt(units,1)} units</b><br>` +
+        `Doses per vial ≈ ${doses}` +
+        (units < 2 ? `<br><span style="color:var(--warning)">⚠ Very small draw — consider more water for easier measurement</span>` : '');
+    }
+
+    ['vialAmount','vialUnit','waterMl','doseAmount','doseUnit'].forEach(id => {
+      document.getElementById(id).addEventListener('input', calculate);
+      document.getElementById(id).addEventListener('change', calculate);
+    });
+
+    function resetCalc() {
+      document.getElementById('peptideName').value = '';
+      document.getElementById('vialAmount').value = 5;
+      document.getElementById('vialUnit').value = 'mg';
+      document.getElementById('waterMl').value = 2;
+      document.getElementById('doseAmount').value = 250;
+      document.getElementById('doseUnit').value = 'mcg';
+      calculate();
+    }
+
+    function saveCurrentPeptide() {
+      const name = document.getElementById('peptideName').value.trim() || 'Unnamed Peptide';
+      const entry = {
+        id: Date.now(),
+        name,
+        vialAmount: parseFloat(document.getElementById('vialAmount').value),
+        vialUnit: document.getElementById('vialUnit').value,
+        waterMl: parseFloat(document.getElementById('waterMl').value),
+        doseAmount: parseFloat(document.getElementById('doseAmount').value),
+        doseUnit: document.getElementById('doseUnit').value
+      };
+      peptides.push(entry);
+      saveState();
+      showToast(`Saved “${name}”`);
+      renderPeptides();
+    }
+
+    function loadPeptide(id) {
+      const p = peptides.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('peptideName').value = p.name;
+      document.getElementById('vialAmount').value = p.vialAmount;
+      document.getElementById('vialUnit').value = p.vialUnit;
+      document.getElementById('waterMl').value = p.waterMl;
+      document.getElementById('doseAmount').value = p.doseAmount;
+      document.getElementById('doseUnit').value = p.doseUnit;
+      calculate();
+      document.querySelector('[data-tab="calc"]').click();
+      showToast(`Loaded “${p.name}”`);
+    }
+
+    function deletePeptide(id) {
+      peptides = peptides.filter(x => x.id !== id);
+      saveState();
+      renderPeptides();
+      showToast('Peptide deleted');
+    }
+
+    function renderPeptides() {
+      const el = document.getElementById('peptideList');
+      if (!peptides.length) {
+        el.innerHTML = '<div class="empty">No saved peptides yet. Calculate one and hit “Save Peptide”.</div>';
+        return;
+      }
+      el.innerHTML = peptides.map(p => `
+        <div class="peptide-item">
+          <div class="info">
+            <h3>${escapeHtml(p.name)}</h3>
+            <p>${p.vialAmount} ${p.vialUnit} + ${p.waterMl} mL → dose ${p.doseAmount} ${p.doseUnit}</p>
+          </div>
+          <div class="btns">
+            <button class="btn btn-primary btn-sm" onclick="loadPeptide(${p.id})">Load</button>
+            <button class="btn btn-danger btn-sm" onclick="deletePeptide(${p.id})">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function exportPeptides() {
+      if (!peptides.length) {
+        showToast('No peptides to export');
+        return;
+      }
+      const data = peptides.map(p => ({
+        name: p.name,
+        vialAmount: p.vialAmount,
+        vialUnit: p.vialUnit,
+        waterMl: p.waterMl,
+        doseAmount: p.doseAmount,
+        doseUnit: p.doseUnit
+      }));
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `peptide_profiles_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Peptides exported');
+    }
+
+    function importPeptidesText(text) {
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        showToast('Invalid JSON file');
+        return;
+      }
+      if (!Array.isArray(data)) {
+        showToast('Expected a JSON array of peptides');
+        return;
+      }
+      const imported = [];
+      data.forEach((p, i) => {
+        if (!p || typeof p !== 'object') return;
+        const vialAmount = parseFloat(p.vialAmount);
+        const waterMl = parseFloat(p.waterMl);
+        const doseAmount = parseFloat(p.doseAmount);
+        if (!(vialAmount > 0) || !(waterMl > 0)) return;
+        let vialUnit = String(p.vialUnit || 'mg').toLowerCase();
+        if (vialUnit !== 'mg' && vialUnit !== 'mcg') vialUnit = 'mg';
+        let doseUnit = String(p.doseUnit || 'mcg').toLowerCase();
+        if (doseUnit !== 'mg' && doseUnit !== 'mcg') doseUnit = 'mcg';
+        imported.push({
+          id: Date.now() + i + Math.random(),
+          name: String(p.name || 'Imported').trim() || 'Imported',
+          vialAmount,
+          vialUnit,
+          waterMl,
+          doseAmount: doseAmount > 0 ? doseAmount : 250,
+          doseUnit
+        });
+      });
+      if (!imported.length) {
+        showToast('No valid peptides found');
+        return;
+      }
+      if (peptides.length) {
+        const merge = confirm(
+          `Import ${imported.length} peptide(s)?\nOK = add to existing\nCancel = replace all`
+        );
+        if (merge) peptides = peptides.concat(imported);
+        else peptides = imported;
+      } else {
+        peptides = imported;
+      }
+      saveState();
+      renderPeptides();
+      showToast(`Imported ${imported.length} peptide(s)`);
+    }
+
+    document.getElementById('importPeptidesFile').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => importPeptidesText(String(reader.result || ''));
+      reader.onerror = () => showToast('Could not read file');
+      reader.readAsText(file);
+    });
+
+    function renderLogSelect() {
+      const sel = document.getElementById('logPeptideSelect');
+      const current = sel.value;
+      sel.innerHTML = '<option value="">— Custom / Manual —</option>' +
+        peptides.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+      sel.value = current;
+    }
+
+    function getLogDoseMcg() {
+      return toMcg(parseFloat(document.getElementById('logDose').value) || 0, document.getElementById('logDoseUnit').value);
+    }
+
+    function setLogDoseFromMcg(mcg) {
+      const unit = document.getElementById('logDoseUnit').value;
+      document.getElementById('logDose').value = niceNum(fromMcg(mcg, unit), unit === 'mg' ? 4 : 2);
+    }
+
+    function lockRatioFromCurrentPair() {
+      const mcg = getLogDoseMcg();
+      const units = parseFloat(document.getElementById('logUnits').value);
+      if (mcg > 0 && units > 0) {
+        logMcgPerUnit = mcg / units;
+        updateSyncHint();
+        return true;
+      }
+      return false;
+    }
+
+    function applyPeptideRatio(p) {
+      const ratio = mcgPerUnitFromMix(p.vialAmount, p.vialUnit, p.waterMl);
+      if (ratio) logMcgPerUnit = ratio;
+      updateSyncHint();
+    }
+
+    document.getElementById('logPeptideSelect').addEventListener('change', function() {
+      const id = this.value;
+      if (!id) return;
+      const p = peptides.find(x => x.id == id);
+      if (!p) return;
+      syncingLog = true;
+      document.getElementById('logName').value = p.name;
+      document.getElementById('logDose').value = p.doseAmount;
+      document.getElementById('logDoseUnit').value = p.doseUnit;
+      applyPeptideRatio(p);
+      const doseMcg = toMcg(parseFloat(p.doseAmount) || 0, p.doseUnit);
+      if (logMcgPerUnit && doseMcg > 0) {
+        document.getElementById('logUnits').value = niceNum(doseMcg / logMcgPerUnit, 2);
+      }
+      syncingLog = false;
+    });
+
+    document.getElementById('logDose').addEventListener('input', () => {
+      if (syncingLog) return;
+      if (!logMcgPerUnit && !lockRatioFromCurrentPair()) return;
+      const mcg = getLogDoseMcg();
+      if (!(mcg > 0) || !logMcgPerUnit) return;
+      syncingLog = true;
+      document.getElementById('logUnits').value = niceNum(mcg / logMcgPerUnit, 2);
+      syncingLog = false;
+    });
+
+    document.getElementById('logUnits').addEventListener('input', () => {
+      if (syncingLog) return;
+      if (!logMcgPerUnit && !lockRatioFromCurrentPair()) return;
+      const units = parseFloat(document.getElementById('logUnits').value);
+      if (!(units > 0) || !logMcgPerUnit) return;
+      syncingLog = true;
+      setLogDoseFromMcg(units * logMcgPerUnit);
+      syncingLog = false;
+    });
+
+    document.getElementById('logDoseUnit').addEventListener('change', () => {
+      if (!logMcgPerUnit) return;
+      const units = parseFloat(document.getElementById('logUnits').value);
+      if (units > 0) {
+        syncingLog = true;
+        setLogDoseFromMcg(units * logMcgPerUnit);
+        syncingLog = false;
+      }
+    });
+
+    function addLogEntry() {
+      const name = document.getElementById('logName').value.trim() || 'Unknown';
+      const doseAmt = parseFloat(document.getElementById('logDose').value) || 0;
+      const doseUnit = document.getElementById('logDoseUnit').value;
+      const units = document.getElementById('logUnits').value;
+      const dateVal = document.getElementById('logDate').value;
+      const notes = document.getElementById('logNotes').value.trim();
+
+      if (!doseAmt) {
+        showToast('Enter a dose amount');
+        return;
+      }
+
+      const entry = {
+        id: Date.now() + Math.random(),
+        name,
+        dose: doseAmt,
+        doseUnit,
+        units: units ? parseFloat(units) : null,
+        date: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString(),
+        notes
+      };
+      logEntries.unshift(entry);
+      saveState();
+      renderLog();
+      document.getElementById('logNotes').value = '';
+      showToast('Dose logged');
+    }
+
+    function deleteLogEntry(id) {
+      logEntries = logEntries.filter(x => x.id !== id);
+      saveState();
+      renderLog();
+      showToast('Entry removed');
+    }
+
+    function renderLog() {
+      const tbody = document.getElementById('logTableBody');
+      if (!logEntries.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">No doses logged yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = logEntries.map(e => {
+        const d = new Date(e.date);
+        const dateStr = isNaN(d) ? String(e.date) : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+        return `<tr>
+          <td>${dateStr}</td>
+          <td>${escapeHtml(e.name)}</td>
+          <td>${fmt(e.dose, 2)} ${e.doseUnit}</td>
+          <td>${e.units != null && e.units !== '' ? fmt(e.units, 1) : '—'}</td>
+          <td>${escapeHtml(e.notes || '')}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})">×</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function clearLog() {
+      if (!confirm('Clear entire dose log? This cannot be undone.')) return;
+      logEntries = [];
+      saveState();
+      renderLog();
+      showToast('Log cleared');
+    }
+
+    function exportLog() {
+      if (!logEntries.length) {
+        showToast('Nothing to export');
+        return;
+      }
+      const header = 'Date,Peptide,Dose,Unit,Units Drawn,Notes\n';
+      const rows = logEntries.map(e => {
+        const d = e.date ? new Date(e.date).toISOString() : '';
+        return `"${d}","${String(e.name || '').replace(/"/g,'""')}",${e.dose},${e.doseUnit},${e.units ?? ''},"${String(e.notes || '').replace(/"/g,'""')}"`;
+      }).join('\n');
+      const blob = new Blob([header + rows], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `peptide_log_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV downloaded');
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+        if (inQuotes) {
+          if (ch === '"' && next === '"') { cell += '"'; i++; }
+          else if (ch === '"') inQuotes = false;
+          else cell += ch;
+        } else if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ',') {
+          row.push(cell);
+          cell = '';
+        } else if (ch === '\n' || ch === '\r') {
+          if (ch === '\r' && next === '\n') i++;
+          row.push(cell);
+          if (row.some(v => String(v).trim() !== '')) rows.push(row);
+          row = [];
+          cell = '';
+        } else {
+          cell += ch;
+        }
+      }
+      if (cell !== '' || row.length) {
+        row.push(cell);
+        if (row.some(v => String(v).trim() !== '')) rows.push(row);
+      }
+      return rows;
+    }
+
+    function importLogText(text) {
+      const rows = parseCsv(text.replace(/^\uFEFF/, ''));
+      if (!rows.length) {
+        showToast('CSV is empty');
+        return;
+      }
+
+      const header = rows[0].map(h => h.trim().toLowerCase());
+      const looksLikeHeader = header.some(h =>
+        ['date','peptide','dose','unit','units drawn','units','notes','name'].includes(h)
+      );
+      const dataRows = looksLikeHeader ? rows.slice(1) : rows;
+
+      const idx = (names) => {
+        for (const n of names) {
+          const i = header.indexOf(n);
+          if (i !== -1) return i;
+        }
+        return -1;
+      };
+
+      const iDate = looksLikeHeader ? idx(['date']) : 0;
+      const iName = looksLikeHeader ? idx(['peptide','name']) : 1;
+      const iDose = looksLikeHeader ? idx(['dose']) : 2;
+      const iUnit = looksLikeHeader ? idx(['unit','dose unit']) : 3;
+      const iUnits = looksLikeHeader ? idx(['units drawn','units','draw units']) : 4;
+      const iNotes = looksLikeHeader ? idx(['notes']) : 5;
+
+      const imported = [];
+      dataRows.forEach((r, n) => {
+        const dose = parseFloat(r[iDose]);
+        if (!(dose > 0) && !(parseFloat(r[iUnits]) > 0)) return;
+        let unit = String(r[iUnit] || 'mcg').trim().toLowerCase();
+        if (unit === 'ug' || unit === 'µg') unit = 'mcg';
+        if (unit !== 'mg' && unit !== 'mcg') unit = 'mcg';
+        const unitsRaw = r[iUnits];
+        const unitsVal = unitsRaw === '' || unitsRaw == null ? null : parseFloat(unitsRaw);
+        imported.push({
+          id: Date.now() + n + Math.random(),
+          name: String(r[iName] || 'Imported').trim() || 'Imported',
+          dose: isNaN(dose) ? 0 : dose,
+          doseUnit: unit,
+          units: unitsVal != null && !isNaN(unitsVal) ? unitsVal : null,
+          date: r[iDate] ? new Date(r[iDate]).toISOString() : new Date().toISOString(),
+          notes: String(r[iNotes] || '').trim()
+        });
+      });
+
+      if (!imported.length) {
+        showToast('No valid rows found');
+        return;
+      }
+
+      if (logEntries.length) {
+        const merge = confirm(
+          `Import ${imported.length} row(s) into the current log?\nOK = add to existing\nCancel = replace the log`
+        );
+        if (merge) logEntries = imported.concat(logEntries);
+        else logEntries = imported;
+      } else {
+        logEntries = imported;
+      }
+
+      logEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+      saveState();
+      renderLog();
+      showToast(`Imported ${imported.length} row(s)`);
+    }
+
+    document.getElementById('importLogFile').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => importLogText(String(reader.result || ''));
+      reader.onerror = () => showToast('Could not read file');
+      reader.readAsText(file);
+    });
+
+    function logCurrentDose() {
+      const name = document.getElementById('peptideName').value.trim() || 'Unnamed';
+      const doseAmt = parseFloat(document.getElementById('doseAmount').value) || 0;
+      const doseUnit = document.getElementById('doseUnit').value;
+      const unitsText = document.getElementById('resUnits').textContent;
+      const match = unitsText.match(/([\d.]+)/);
+      const units = match ? parseFloat(match[1]) : null;
+      const ratio = mcgPerUnitFromMix(
+        document.getElementById('vialAmount').value,
+        document.getElementById('vialUnit').value,
+        document.getElementById('waterMl').value
+      );
+      if (ratio) logMcgPerUnit = ratio;
+
+      document.querySelector('[data-tab="log"]').click();
+      document.getElementById('logName').value = name;
+      document.getElementById('logDose').value = doseAmt;
+      document.getElementById('logDoseUnit').value = doseUnit;
+      if (units != null) document.getElementById('logUnits').value = units;
+      document.getElementById('logDate').value = new Date().toISOString().slice(0,16);
+      updateSyncHint();
+      showToast('Prefills ready — hit Add to Log');
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.getElementById('logDate').value = new Date().toISOString().slice(0,16);
+    calculate();
+    renderPeptides();
+    updateSyncHint();
+  </script>
+</body>
+</html>
