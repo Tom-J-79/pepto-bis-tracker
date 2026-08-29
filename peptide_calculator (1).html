@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+  <title>PepLog</title>
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PepLog">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0f1419">
+  <meta name="description" content="PepLog — peptide reconstitution, dosage calculator and dose logger">
+
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%233b82f6'/><text y='68' x='50' text-anchor='middle' font-size='52' fill='white' font-family='system-ui'>P</text></svg>">
+
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --text-muted: #8b9bb4;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 12px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      line-height: 1.5;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 6px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 10px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .tab:hover { border-color: var(--accent); color: var(--text); }
+    .tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .field input, .field select, .field textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 1rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent);
+    }
+    .unit-row {
+      display: flex;
+      gap: 8px;
+    }
+    .unit-row input { flex: 1; }
+    .unit-row select { width: 90px; flex-shrink: 0; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+    .btn-danger:hover { background: var(--danger); color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .result-box {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .result-box .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #60a5fa;
+      line-height: 1.2;
+    }
+    .result-box .label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-top: 4px;
+    }
+    .syringe-visual {
+      margin-top: 20px;
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+    .syringe-bar {
+      height: 28px;
+      background: #1e293b;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .syringe-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      border-radius: 5px;
+      transition: width 0.3s ease;
+      max-width: 100%;
+    }
+    .syringe-marks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    tr:hover td { background: rgba(59, 130, 246, 0.05); }
+    .empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 32px 16px;
+      font-size: 0.95rem;
+    }
+    .peptide-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .peptide-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .peptide-item .info h3 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .peptide-item .info p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .peptide-item .btns {
+      display: flex;
+      gap: 8px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .math-box {
+      margin-top: 16px;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      border: 1px solid var(--border);
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .pk-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+    .pk-toolbar .field { min-width: 120px; }
+    .pk-chart-wrap {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 8px 8px;
+      overflow: hidden;
+    }
+    .pk-chart-wrap svg { width: 100%; height: auto; display: block; }
+    .pk-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .pk-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .pk-swatch {
+      width: 14px; height: 3px; border-radius: 2px; display: inline-block;
+    }
+    .pk-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+      line-height: 1.55;
+    }
+    .pk-doses { margin-top: 8px; font-size: 0.85rem; }
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .results { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>PepLog</h1>
+      <p>Reconstitution • Dosage • Tracking</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="calc">Calculator</button>
+      <button class="tab" data-tab="peptides">My Peptides</button>
+      <button class="tab" data-tab="log">Dose Log</button>
+      <button class="tab" data-tab="pk">Reta PK</button>
+    </div>
+
+    <div id="calc" class="panel active">
+      <div class="card">
+        <h2>Reconstitution & Dose</h2>
+        <div class="grid">
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Peptide Name (optional)</label>
+            <input type="text" id="peptideName" placeholder="e.g. BPC-157, Tirzepatide…">
+          </div>
+          <div class="field">
+            <label>Vial Amount</label>
+            <div class="unit-row">
+              <input type="number" id="vialAmount" value="5" min="0" step="any">
+              <select id="vialUnit">
+                <option value="mg">mg</option>
+                <option value="mcg">mcg</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>BAC Water</label>
+            <div class="unit-row">
+              <input type="number" id="waterMl" value="2" min="0" step="any">
+              <select disabled><option>mL</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Desired Dose</label>
+            <div class="unit-row">
+              <input type="number" id="doseAmount" value="250" min="0" step="any">
+              <select id="doseUnit">
+                <option value="mcg">mcg</option>
+                <option value="mg">mg</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="results" id="results">
+          <div class="result-box">
+            <div class="value" id="resConc">—</div>
+            <div class="label">Concentration</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resUnits">—</div>
+            <div class="label">Draw Units</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resVol">—</div>
+            <div class="label">Volume (mL)</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resDoses">—</div>
+            <div class="label">Doses / Vial</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resPerUnit">—</div>
+            <div class="label">mcg / Unit</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="resTotal">—</div>
+            <div class="label">Total mcg</div>
+          </div>
+        </div>
+
+        <div class="syringe-visual">
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">U-100 Syringe Preview</div>
+          <div class="syringe-bar">
+            <div class="syringe-fill" id="syringeFill" style="width:0%"></div>
+          </div>
+          <div class="syringe-marks">
+            <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+          </div>
+        </div>
+
+        <div class="math-box" id="mathBox">Enter values to see the math.</div>
+
+        <div class="actions">
+          <button class="btn btn-primary" onclick="calculate()">Calculate</button>
+          <button class="btn btn-secondary" onclick="saveCurrentPeptide()">Save Peptide</button>
+          <button class="btn btn-secondary" onclick="logCurrentDose()">Log This Dose</button>
+          <button class="btn btn-secondary" onclick="resetCalc()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="peptides" class="panel">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin:0;">Saved Peptides</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importPeptidesFile').click()">Import</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportPeptides()">Export</button>
+            <input type="file" id="importPeptidesFile" accept=".json,application/json,text/plain" style="display:none">
+          </div>
+        </div>
+        <div id="peptideList" class="peptide-list">
+          <div class="empty">No saved peptides yet. Calculate one and hit “Save Peptide”.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="log" class="panel">
+      <div class="card">
+        <h2>Log a Dose</h2>
+        <div class="grid">
+          <div class="field">
+            <label>Peptide</label>
+            <select id="logPeptideSelect">
+              <option value="">— Custom / Manual —</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Name (if custom)</label>
+            <input type="text" id="logName" placeholder="Peptide name">
+          </div>
+          <div class="field">
+            <label>Dose</label>
+            <div class="unit-row">
+              <input type="number" id="logDose" value="250" min="0" step="any">
+              <select id="logDoseUnit">
+                <option value="mcg">mcg</option>
+                <option value="mg">mg</option>
+              </select>
+            </div>
+            <div class="hint" id="logSyncHint">Dose and units stay in proportion once a ratio is set.</div>
+          </div>
+          <div class="field">
+            <label>Units Drawn</label>
+            <input type="number" id="logUnits" min="0" step="any" placeholder="optional">
+          </div>
+          <div class="field">
+            <label>Date & Time</label>
+            <input type="datetime-local" id="logDate">
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Notes</label>
+            <textarea id="logNotes" rows="2" placeholder="Optional notes…"></textarea>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="addLogEntry()">Add to Log</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin:0;">History</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importLogFile').click()">Import CSV</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportLog()">Export CSV</button>
+            <button class="btn btn-danger btn-sm" onclick="clearLog()">Clear Log</button>
+            <input type="file" id="importLogFile" accept=".csv,text/csv,text/plain" style="display:none">
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Peptide</th>
+                <th>Dose</th>
+                <th>Units</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody">
+              <tr><td colspan="6" class="empty">No doses logged yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="pk" class="panel">
+      <div class="card">
+        <h2>Retatrutide exposure</h2>
+        <p class="hint" style="margin-bottom:14px;">Pulls every logged dose whose name looks like Reta / Retatrutide / LY3437943, stacks them with Coskun 2022 PK constants, then extrapolates forward.</p>
+
+        <div class="pk-toolbar">
+          <div class="field">
+            <label>Look-ahead</label>
+            <select id="pkHorizon">
+              <option value="7">7 days</option>
+              <option value="14" selected>14 days</option>
+              <option value="21">21 days</option>
+              <option value="28">28 days</option>
+              <option value="42">42 days</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>If I keep dosing</label>
+            <select id="pkRepeat">
+              <option value="none">Decay only (no more shots)</option>
+              <option value="last">Repeat last dose weekly</option>
+              <option value="custom">Repeat last dose every…</option>
+              <option value="split" selected>Split days (Mon PM / Fri PM)</option>
+            </select>
+          </div>
+          <div class="field" id="pkIntervalWrap" style="display:none;">
+            <label>Interval (days)</label>
+            <input type="number" id="pkInterval" value="7" min="1" max="28" step="1">
+          </div>
+          <div class="field" id="pkSplitAWrap" style="display:none;">
+            <label>First split day</label>
+            <select id="pkSplitA">
+              <option value="0">Sunday</option>
+              <option value="1" selected>Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+          <div class="field" id="pkSplitTimeAWrap" style="display:none;">
+            <label>First shot time</label>
+            <input type="time" id="pkSplitTimeA" value="20:00">
+          </div>
+          <div class="field" id="pkSplitBWrap" style="display:none;">
+            <label>Second split day</label>
+            <select id="pkSplitB">
+              <option value="0">Sunday</option>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5" selected>Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+          <div class="field" id="pkSplitTimeBWrap" style="display:none;">
+            <label>Second shot time</label>
+            <input type="time" id="pkSplitTimeB" value="20:00">
+          </div>
+        </div>
+
+        <div class="results" id="pkStats">
+          <div class="result-box">
+            <div class="value" id="pkNow">—</div>
+            <div class="label">Est. now (ng/mL)</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="pkCavg">—</div>
+            <div class="label">7-day Cavg</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="pkAuc7">—</div>
+            <div class="label">7-day AUC (ng·h/mL)</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="pkAucMean">—</div>
+            <div class="label">Mean AUC / week</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="pkCmax">—</div>
+            <div class="label">Window Cmax</div>
+          </div>
+          <div class="result-box">
+            <div class="value" id="pkCmin">—</div>
+            <div class="label">Window Cmin / trough</div>
+          </div>
+        </div>
+
+        <div class="pk-chart-wrap" id="pkChartWrap">
+          <div class="empty" id="pkEmpty">No Reta doses in the log yet. Log one as “Reta” or “Retatrutide” and this curve fills in.</div>
+          <svg id="pkSvg" viewBox="0 0 760 320" style="display:none;" aria-label="Retatrutide plasma concentration chart"></svg>
+        </div>
+        <div class="pk-legend" id="pkLegend" style="display:none;">
+          <span><i class="pk-swatch" style="background:#60a5fa;"></i> Estimated plasma</span>
+          <span><i class="pk-swatch" style="background:#a78bfa; border-top:1px dashed #a78bfa; height:0; width:16px;"></i> Extrapolation</span>
+          <span><i class="pk-swatch" style="background:#f59e0b; height:8px; width:8px; border-radius:50%;"></i> Logged dose</span>
+          <span><i class="pk-swatch" style="background:#22c55e; height:14px; width:2px;"></i> Now</span>
+        </div>
+        <p class="pk-note" id="pkMeta"></p>
+      </div>
+
+      <div class="card">
+        <h2>Reta doses used</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Logged as</th>
+                <th>Dose</th>
+                <th>mg used in model</th>
+              </tr>
+            </thead>
+            <tbody id="pkDoseBody">
+              <tr><td colspan="4" class="empty">None yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let peptides = JSON.parse(localStorage.getItem('peptide_calc_peptides') || '[]');
+    let logEntries = JSON.parse(localStorage.getItem('peptide_calc_log') || '[]');
+    let logMcgPerUnit = null;
+    let syncingLog = false;
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+        if (tab.dataset.tab === 'peptides') renderPeptides();
+        if (tab.dataset.tab === 'log') {
+          renderLogSelect();
+          renderLog();
+        }
+        if (tab.dataset.tab === 'pk') renderPk();
+      });
+    });
+
+    function toMcg(amount, unit) {
+      return unit === 'mg' ? amount * 1000 : amount;
+    }
+    function fromMcg(mcg, unit) {
+      return unit === 'mg' ? mcg / 1000 : mcg;
+    }
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2200);
+    }
+    function saveState() {
+      localStorage.setItem('peptide_calc_peptides', JSON.stringify(peptides));
+      localStorage.setItem('peptide_calc_log', JSON.stringify(logEntries));
+    }
+    function fmt(n, d = 2) {
+      if (n == null || isNaN(n)) return '—';
+      return Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
+    }
+    function niceNum(n, maxDec = 4) {
+      if (n == null || isNaN(n)) return '';
+      const rounded = Math.round(n * Math.pow(10, maxDec)) / Math.pow(10, maxDec);
+      return String(rounded);
+    }
+    function mcgPerUnitFromMix(vialAmount, vialUnit, waterMl) {
+      const water = parseFloat(waterMl);
+      const total = toMcg(parseFloat(vialAmount) || 0, vialUnit);
+      if (!(water > 0) || !(total > 0)) return null;
+      return (total / water) / 100;
+    }
+    function updateSyncHint() {
+      const hint = document.getElementById('logSyncHint');
+      if (!hint) return;
+      if (logMcgPerUnit) {
+        hint.textContent = 'Linked: ' + fmt(logMcgPerUnit, 2) + ' mcg per unit. Change one and the other follows.';
+      } else {
+        hint.textContent = 'Select a saved peptide, log from the calculator, or fill both fields once to lock the ratio.';
+      }
+    }
+
+    function calculate() {
+      const vialAmt = parseFloat(document.getElementById('vialAmount').value) || 0;
+      const vialUnit = document.getElementById('vialUnit').value;
+      const water = parseFloat(document.getElementById('waterMl').value) || 0;
+      const doseAmt = parseFloat(document.getElementById('doseAmount').value) || 0;
+      const doseUnit = document.getElementById('doseUnit').value;
+
+      if (vialAmt <= 0 || water <= 0 || doseAmt <= 0) {
+        document.getElementById('resConc').textContent = '—';
+        document.getElementById('resUnits').textContent = '—';
+        document.getElementById('resVol').textContent = '—';
+        document.getElementById('resDoses').textContent = '—';
+        document.getElementById('resPerUnit').textContent = '—';
+        document.getElementById('resTotal').textContent = '—';
+        document.getElementById('syringeFill').style.width = '0%';
+        document.getElementById('mathBox').textContent = 'Enter positive values for vial, water, and dose.';
+        return;
+      }
+
+      const totalMcg = toMcg(vialAmt, vialUnit);
+      const doseMcg = toMcg(doseAmt, doseUnit);
+      const concMcgMl = totalMcg / water;
+      const concMgMl = concMcgMl / 1000;
+      const volMl = doseMcg / concMcgMl;
+      const units = volMl * 100;
+      const doses = Math.floor(totalMcg / doseMcg);
+      const mcgPerUnit = concMcgMl / 100;
+
+      document.getElementById('resConc').textContent = fmt(concMgMl, 3) + ' mg/mL';
+      document.getElementById('resUnits').textContent = fmt(units, 1) + ' u';
+      document.getElementById('resVol').textContent = fmt(volMl, 4);
+      document.getElementById('resDoses').textContent = doses;
+      document.getElementById('resPerUnit').textContent = fmt(mcgPerUnit, 2);
+      document.getElementById('resTotal').textContent = fmt(totalMcg, 0);
+
+      const fillPct = Math.min((units / 100) * 100, 100);
+      document.getElementById('syringeFill').style.width = fillPct + '%';
+
+      document.getElementById('mathBox').innerHTML =
+        `Total = <b>${fmt(totalMcg,0)} mcg</b><br>` +
+        `Concentration = ${fmt(totalMcg,0)} ÷ ${water} mL = <b>${fmt(concMcgMl,1)} mcg/mL</b> (${fmt(concMgMl,3)} mg/mL)<br>` +
+        `Volume = ${fmt(doseMcg,0)} mcg ÷ ${fmt(concMcgMl,1)} = <b>${fmt(volMl,4)} mL</b><br>` +
+        `Units (U-100) = ${fmt(volMl,4)} × 100 = <b>${fmt(units,1)} units</b><br>` +
+        `Doses per vial ≈ ${doses}` +
+        (units < 2 ? `<br><span style="color:var(--warning)">⚠ Very small draw — consider more water for easier measurement</span>` : '');
+    }
+
+    ['vialAmount','vialUnit','waterMl','doseAmount','doseUnit'].forEach(id => {
+      document.getElementById(id).addEventListener('input', calculate);
+      document.getElementById(id).addEventListener('change', calculate);
+    });
+
+    function resetCalc() {
+      document.getElementById('peptideName').value = '';
+      document.getElementById('vialAmount').value = 5;
+      document.getElementById('vialUnit').value = 'mg';
+      document.getElementById('waterMl').value = 2;
+      document.getElementById('doseAmount').value = 250;
+      document.getElementById('doseUnit').value = 'mcg';
+      calculate();
+    }
+
+    function saveCurrentPeptide() {
+      const name = document.getElementById('peptideName').value.trim() || 'Unnamed Peptide';
+      const entry = {
+        id: Date.now(),
+        name,
+        vialAmount: parseFloat(document.getElementById('vialAmount').value),
+        vialUnit: document.getElementById('vialUnit').value,
+        waterMl: parseFloat(document.getElementById('waterMl').value),
+        doseAmount: parseFloat(document.getElementById('doseAmount').value),
+        doseUnit: document.getElementById('doseUnit').value
+      };
+      peptides.push(entry);
+      saveState();
+      showToast(`Saved “${name}”`);
+      renderPeptides();
+    }
+
+    function loadPeptide(id) {
+      const p = peptides.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('peptideName').value = p.name;
+      document.getElementById('vialAmount').value = p.vialAmount;
+      document.getElementById('vialUnit').value = p.vialUnit;
+      document.getElementById('waterMl').value = p.waterMl;
+      document.getElementById('doseAmount').value = p.doseAmount;
+      document.getElementById('doseUnit').value = p.doseUnit;
+      calculate();
+      document.querySelector('[data-tab="calc"]').click();
+      showToast(`Loaded “${p.name}”`);
+    }
+
+    function deletePeptide(id) {
+      peptides = peptides.filter(x => x.id !== id);
+      saveState();
+      renderPeptides();
+      showToast('Peptide deleted');
+    }
+
+    function renderPeptides() {
+      const el = document.getElementById('peptideList');
+      if (!peptides.length) {
+        el.innerHTML = '<div class="empty">No saved peptides yet. Calculate one and hit “Save Peptide”.</div>';
+        return;
+      }
+      el.innerHTML = peptides.map(p => `
+        <div class="peptide-item">
+          <div class="info">
+            <h3>${escapeHtml(p.name)}</h3>
+            <p>${p.vialAmount} ${p.vialUnit} + ${p.waterMl} mL → dose ${p.doseAmount} ${p.doseUnit}</p>
+          </div>
+          <div class="btns">
+            <button class="btn btn-primary btn-sm" onclick="loadPeptide(${p.id})">Load</button>
+            <button class="btn btn-danger btn-sm" onclick="deletePeptide(${p.id})">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function exportPeptides() {
+      if (!peptides.length) {
+        showToast('No peptides to export');
+        return;
+      }
+      const data = peptides.map(p => ({
+        name: p.name,
+        vialAmount: p.vialAmount,
+        vialUnit: p.vialUnit,
+        waterMl: p.waterMl,
+        doseAmount: p.doseAmount,
+        doseUnit: p.doseUnit
+      }));
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `peptide_profiles_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Peptides exported');
+    }
+
+    function importPeptidesText(text) {
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        showToast('Invalid JSON file');
+        return;
+      }
+      if (!Array.isArray(data)) {
+        showToast('Expected a JSON array of peptides');
+        return;
+      }
+      const imported = [];
+      data.forEach((p, i) => {
+        if (!p || typeof p !== 'object') return;
+        const vialAmount = parseFloat(p.vialAmount);
+        const waterMl = parseFloat(p.waterMl);
+        const doseAmount = parseFloat(p.doseAmount);
+        if (!(vialAmount > 0) || !(waterMl > 0)) return;
+        let vialUnit = String(p.vialUnit || 'mg').toLowerCase();
+        if (vialUnit !== 'mg' && vialUnit !== 'mcg') vialUnit = 'mg';
+        let doseUnit = String(p.doseUnit || 'mcg').toLowerCase();
+        if (doseUnit !== 'mg' && doseUnit !== 'mcg') doseUnit = 'mcg';
+        imported.push({
+          id: Date.now() + i + Math.random(),
+          name: String(p.name || 'Imported').trim() || 'Imported',
+          vialAmount,
+          vialUnit,
+          waterMl,
+          doseAmount: doseAmount > 0 ? doseAmount : 250,
+          doseUnit
+        });
+      });
+      if (!imported.length) {
+        showToast('No valid peptides found');
+        return;
+      }
+      if (peptides.length) {
+        const merge = confirm(
+          `Import ${imported.length} peptide(s)?\nOK = add to existing\nCancel = replace all`
+        );
+        if (merge) peptides = peptides.concat(imported);
+        else peptides = imported;
+      } else {
+        peptides = imported;
+      }
+      saveState();
+      renderPeptides();
+      showToast(`Imported ${imported.length} peptide(s)`);
+    }
+
+    document.getElementById('importPeptidesFile').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => importPeptidesText(String(reader.result || ''));
+      reader.onerror = () => showToast('Could not read file');
+      reader.readAsText(file);
+    });
+
+    function renderLogSelect() {
+      const sel = document.getElementById('logPeptideSelect');
+      const current = sel.value;
+      sel.innerHTML = '<option value="">— Custom / Manual —</option>' +
+        peptides.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+      sel.value = current;
+    }
+
+    function getLogDoseMcg() {
+      return toMcg(parseFloat(document.getElementById('logDose').value) || 0, document.getElementById('logDoseUnit').value);
+    }
+
+    function setLogDoseFromMcg(mcg) {
+      const unit = document.getElementById('logDoseUnit').value;
+      document.getElementById('logDose').value = niceNum(fromMcg(mcg, unit), unit === 'mg' ? 4 : 2);
+    }
+
+    function lockRatioFromCurrentPair() {
+      const mcg = getLogDoseMcg();
+      const units = parseFloat(document.getElementById('logUnits').value);
+      if (mcg > 0 && units > 0) {
+        logMcgPerUnit = mcg / units;
+        updateSyncHint();
+        return true;
+      }
+      return false;
+    }
+
+    function applyPeptideRatio(p) {
+      const ratio = mcgPerUnitFromMix(p.vialAmount, p.vialUnit, p.waterMl);
+      if (ratio) logMcgPerUnit = ratio;
+      updateSyncHint();
+    }
+
+    document.getElementById('logPeptideSelect').addEventListener('change', function() {
+      const id = this.value;
+      if (!id) return;
+      const p = peptides.find(x => x.id == id);
+      if (!p) return;
+      syncingLog = true;
+      document.getElementById('logName').value = p.name;
+      document.getElementById('logDose').value = p.doseAmount;
+      document.getElementById('logDoseUnit').value = p.doseUnit;
+      applyPeptideRatio(p);
+      const doseMcg = toMcg(parseFloat(p.doseAmount) || 0, p.doseUnit);
+      if (logMcgPerUnit && doseMcg > 0) {
+        document.getElementById('logUnits').value = niceNum(doseMcg / logMcgPerUnit, 2);
+      }
+      syncingLog = false;
+    });
+
+    document.getElementById('logDose').addEventListener('input', () => {
+      if (syncingLog) return;
+      if (!logMcgPerUnit && !lockRatioFromCurrentPair()) return;
+      const mcg = getLogDoseMcg();
+      if (!(mcg > 0) || !logMcgPerUnit) return;
+      syncingLog = true;
+      document.getElementById('logUnits').value = niceNum(mcg / logMcgPerUnit, 2);
+      syncingLog = false;
+    });
+
+    document.getElementById('logUnits').addEventListener('input', () => {
+      if (syncingLog) return;
+      if (!logMcgPerUnit && !lockRatioFromCurrentPair()) return;
+      const units = parseFloat(document.getElementById('logUnits').value);
+      if (!(units > 0) || !logMcgPerUnit) return;
+      syncingLog = true;
+      setLogDoseFromMcg(units * logMcgPerUnit);
+      syncingLog = false;
+    });
+
+    document.getElementById('logDoseUnit').addEventListener('change', () => {
+      if (!logMcgPerUnit) return;
+      const units = parseFloat(document.getElementById('logUnits').value);
+      if (units > 0) {
+        syncingLog = true;
+        setLogDoseFromMcg(units * logMcgPerUnit);
+        syncingLog = false;
+      }
+    });
+
+    function addLogEntry() {
+      const name = document.getElementById('logName').value.trim() || 'Unknown';
+      const doseAmt = parseFloat(document.getElementById('logDose').value) || 0;
+      const doseUnit = document.getElementById('logDoseUnit').value;
+      const units = document.getElementById('logUnits').value;
+      const dateVal = document.getElementById('logDate').value;
+      const notes = document.getElementById('logNotes').value.trim();
+
+      if (!doseAmt) {
+        showToast('Enter a dose amount');
+        return;
+      }
+
+      const entry = {
+        id: Date.now() + Math.random(),
+        name,
+        dose: doseAmt,
+        doseUnit,
+        units: units ? parseFloat(units) : null,
+        date: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString(),
+        notes
+      };
+      logEntries.unshift(entry);
+      saveState();
+      renderLog();
+      document.getElementById('logNotes').value = '';
+      showToast('Dose logged');
+      if (isRetaName(name)) {
+        const pkTab = document.querySelector('[data-tab="pk"]');
+        if (pkTab && pkTab.classList.contains('active')) renderPk();
+      }
+    }
+
+    function deleteLogEntry(id) {
+      logEntries = logEntries.filter(x => x.id !== id);
+      saveState();
+      renderLog();
+      showToast('Entry removed');
+    }
+
+    function renderLog() {
+      const tbody = document.getElementById('logTableBody');
+      if (!logEntries.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">No doses logged yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = logEntries.map(e => {
+        const d = new Date(e.date);
+        const dateStr = isNaN(d) ? String(e.date) : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+        return `<tr>
+          <td>${dateStr}</td>
+          <td>${escapeHtml(e.name)}</td>
+          <td>${fmt(e.dose, 2)} ${e.doseUnit}</td>
+          <td>${e.units != null && e.units !== '' ? fmt(e.units, 1) : '—'}</td>
+          <td>${escapeHtml(e.notes || '')}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})">×</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function clearLog() {
+      if (!confirm('Clear entire dose log? This cannot be undone.')) return;
+      logEntries = [];
+      saveState();
+      renderLog();
+      showToast('Log cleared');
+    }
+
+    function exportLog() {
+      if (!logEntries.length) {
+        showToast('Nothing to export');
+        return;
+      }
+      const header = 'Date,Peptide,Dose,Unit,Units Drawn,Notes\n';
+      const rows = logEntries.map(e => {
+        const d = e.date ? new Date(e.date).toISOString() : '';
+        return `"${d}","${String(e.name || '').replace(/"/g,'""')}",${e.dose},${e.doseUnit},${e.units ?? ''},"${String(e.notes || '').replace(/"/g,'""')}"`;
+      }).join('\n');
+      const blob = new Blob([header + rows], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `peptide_log_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV downloaded');
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+        if (inQuotes) {
+          if (ch === '"' && next === '"') { cell += '"'; i++; }
+          else if (ch === '"') inQuotes = false;
+          else cell += ch;
+        } else if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ',') {
+          row.push(cell);
+          cell = '';
+        } else if (ch === '\n' || ch === '\r') {
+          if (ch === '\r' && next === '\n') i++;
+          row.push(cell);
+          if (row.some(v => String(v).trim() !== '')) rows.push(row);
+          row = [];
+          cell = '';
+        } else {
+          cell += ch;
+        }
+      }
+      if (cell !== '' || row.length) {
+        row.push(cell);
+        if (row.some(v => String(v).trim() !== '')) rows.push(row);
+      }
+      return rows;
+    }
+
+    function importLogText(text) {
+      const rows = parseCsv(text.replace(/^\uFEFF/, ''));
+      if (!rows.length) {
+        showToast('CSV is empty');
+        return;
+      }
+
+      const header = rows[0].map(h => h.trim().toLowerCase());
+      const looksLikeHeader = header.some(h =>
+        ['date','peptide','dose','unit','units drawn','units','notes','name'].includes(h)
+      );
+      const dataRows = looksLikeHeader ? rows.slice(1) : rows;
+
+      const idx = (names) => {
+        for (const n of names) {
+          const i = header.indexOf(n);
+          if (i !== -1) return i;
+        }
+        return -1;
+      };
+
+      const iDate = looksLikeHeader ? idx(['date']) : 0;
+      const iName = looksLikeHeader ? idx(['peptide','name']) : 1;
+      const iDose = looksLikeHeader ? idx(['dose']) : 2;
+      const iUnit = looksLikeHeader ? idx(['unit','dose unit']) : 3;
+      const iUnits = looksLikeHeader ? idx(['units drawn','units','draw units']) : 4;
+      const iNotes = looksLikeHeader ? idx(['notes']) : 5;
+
+      const imported = [];
+      dataRows.forEach((r, n) => {
+        const dose = parseFloat(r[iDose]);
+        if (!(dose > 0) && !(parseFloat(r[iUnits]) > 0)) return;
+        let unit = String(r[iUnit] || 'mcg').trim().toLowerCase();
+        if (unit === 'ug' || unit === 'µg') unit = 'mcg';
+        if (unit !== 'mg' && unit !== 'mcg') unit = 'mcg';
+        const unitsRaw = r[iUnits];
+        const unitsVal = unitsRaw === '' || unitsRaw == null ? null : parseFloat(unitsRaw);
+        imported.push({
+          id: Date.now() + n + Math.random(),
+          name: String(r[iName] || 'Imported').trim() || 'Imported',
+          dose: isNaN(dose) ? 0 : dose,
+          doseUnit: unit,
+          units: unitsVal != null && !isNaN(unitsVal) ? unitsVal : null,
+          date: r[iDate] ? new Date(r[iDate]).toISOString() : new Date().toISOString(),
+          notes: String(r[iNotes] || '').trim()
+        });
+      });
+
+      if (!imported.length) {
+        showToast('No valid rows found');
+        return;
+      }
+
+      if (logEntries.length) {
+        const merge = confirm(
+          `Import ${imported.length} row(s) into the current log?\nOK = add to existing\nCancel = replace the log`
+        );
+        if (merge) logEntries = imported.concat(logEntries);
+        else logEntries = imported;
+      } else {
+        logEntries = imported;
+      }
+
+      logEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+      saveState();
+      renderLog();
+      showToast(`Imported ${imported.length} row(s)`);
+    }
+
+    document.getElementById('importLogFile').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => importLogText(String(reader.result || ''));
+      reader.onerror = () => showToast('Could not read file');
+      reader.readAsText(file);
+    });
+
+    function logCurrentDose() {
+      const name = document.getElementById('peptideName').value.trim() || 'Unnamed';
+      const doseAmt = parseFloat(document.getElementById('doseAmount').value) || 0;
+      const doseUnit = document.getElementById('doseUnit').value;
+      const unitsText = document.getElementById('resUnits').textContent;
+      const match = unitsText.match(/([\d.]+)/);
+      const units = match ? parseFloat(match[1]) : null;
+      const ratio = mcgPerUnitFromMix(
+        document.getElementById('vialAmount').value,
+        document.getElementById('vialUnit').value,
+        document.getElementById('waterMl').value
+      );
+      if (ratio) logMcgPerUnit = ratio;
+
+      document.querySelector('[data-tab="log"]').click();
+      document.getElementById('logName').value = name;
+      document.getElementById('logDose').value = doseAmt;
+      document.getElementById('logDoseUnit').value = doseUnit;
+      if (units != null) document.getElementById('logUnits').value = units;
+      document.getElementById('logDate').value = new Date().toISOString().slice(0,16);
+      updateSyncHint();
+      showToast('Prefills ready — hit Add to Log');
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.getElementById('logDate').value = new Date().toISOString().slice(0,16);
+    calculate();
+    renderPeptides();
+    updateSyncHint();
+
+    const RETA_PK = {
+      tHalfH: 148,
+      ka: 0.065,
+      VzF: 7.5
+    };
+    RETA_PK.ke = Math.LN2 / RETA_PK.tHalfH;
+
+    function isRetaName(name) {
+      return /reta|retatrutide|ly[\s-]?3437943/i.test(String(name || ''));
+    }
+    function entryDoseMg(e) {
+      const amt = parseFloat(e.dose);
+      if (!(amt > 0)) return 0;
+      return e.doseUnit === 'mg' ? amt : amt / 1000;
+    }
+    function getRetaDoses() {
+      return logEntries
+        .map(e => ({
+          t: new Date(e.date).getTime(),
+          mg: entryDoseMg(e),
+          name: e.name,
+          dose: e.dose,
+          doseUnit: e.doseUnit
+        }))
+        .filter(d => isRetaName(d.name) && d.mg > 0 && !isNaN(d.t))
+        .sort((a, b) => a.t - b.t);
+    }
+    function retaConcFromDose(mg, hoursSince) {
+      if (!(hoursSince >= 0) || !(mg > 0)) return 0;
+      const { ka, ke, VzF } = RETA_PK;
+      const pre = (mg / VzF) * 1000 * ka / (ka - ke);
+      return pre * (Math.exp(-ke * hoursSince) - Math.exp(-ka * hoursSince));
+    }
+    function retaConcAt(ms, doses) {
+      let c = 0;
+      for (const d of doses) {
+        const h = (ms - d.t) / 3.6e6;
+        if (h >= 0) c += retaConcFromDose(d.mg, h);
+      }
+      return c;
+    }
+    function trapAuc(samples) {
+      let a = 0;
+      for (let i = 1; i < samples.length; i++) {
+        a += (samples[i].c + samples[i - 1].c) * 0.5 * ((samples[i].t - samples[i - 1].t) / 3.6e6);
+      }
+      return a;
+    }
+    function lastMgOnWeekday(logged, weekday) {
+      for (let i = logged.length - 1; i >= 0; i--) {
+        if (new Date(logged[i].t).getDay() === weekday) return logged[i].mg;
+      }
+      return logged[logged.length - 1].mg;
+    }
+    function nextWeekdayAt(fromMs, weekday, hour, minute) {
+      const target = new Date(fromMs);
+      target.setHours(hour, minute, 0, 0);
+      let add = (weekday - target.getDay() + 7) % 7;
+      if (add === 0 && target.getTime() <= fromMs) add = 7;
+      target.setDate(target.getDate() + add);
+      return target.getTime();
+    }
+    function parseClock(id) {
+      const raw = ((document.getElementById(id) && document.getElementById(id).value) || '20:00').split(':');
+      const hour = Math.min(23, Math.max(0, parseInt(raw[0], 10) || 20));
+      const minute = Math.min(59, Math.max(0, parseInt(raw[1], 10) || 0));
+      return { hour, minute };
+    }
+    function getSplitConfig() {
+      const a = parseClock('pkSplitTimeA');
+      const b = parseClock('pkSplitTimeB');
+      return {
+        dayA: parseInt(document.getElementById('pkSplitA').value, 10),
+        dayB: parseInt(document.getElementById('pkSplitB').value, 10),
+        hourA: a.hour,
+        minuteA: a.minute,
+        hourB: b.hour,
+        minuteB: b.minute
+      };
+    }
+    function weekdayName(n) {
+      return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][n] || '';
+    }
+    function formatClock(hour, minute) {
+      const d = new Date();
+      d.setHours(hour, minute, 0, 0);
+      return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    }
+    function buildProjectedDoses(logged, now, horizonDays, mode, intervalDays, split) {
+      const doses = logged.map(d => ({ ...d, virtual: false }));
+      if (mode === 'none' || !logged.length) return doses;
+      const last = logged[logged.length - 1];
+      const end = now + horizonDays * 86400000 + 2 * 86400000;
+
+      if (mode === 'split') {
+        const slots = [
+          { wd: split.dayA, hour: split.hourA, minute: split.minuteA },
+          { wd: split.dayB, hour: split.hourB, minute: split.minuteB }
+        ];
+        const seen = new Set();
+        slots.forEach(slot => {
+          const key = slot.wd + ':' + slot.hour + ':' + slot.minute;
+          if (seen.has(key)) return;
+          seen.add(key);
+          const mg = lastMgOnWeekday(logged, slot.wd);
+          let t = nextWeekdayAt(now, slot.wd, slot.hour, slot.minute);
+          while (t <= end) {
+            const clash = logged.some(d => Math.abs(d.t - t) < 8 * 3.6e6);
+            if (!clash) doses.push({ t, mg, name: last.name, virtual: true });
+            t += 7 * 86400000;
+          }
+        });
+        return doses.sort((a, b) => a.t - b.t);
+      }
+
+      const step = Math.max(1, intervalDays || 7) * 86400000;
+      let t = last.t + step;
+      if (t < now - 12 * 3.6e6) t = last.t;
+      while (t <= last.t) t += step;
+      while (t <= end) {
+        doses.push({ t, mg: last.mg, name: last.name, virtual: true });
+        t += step;
+      }
+      return doses;
+    }
+
+    function renderPk() {
+      const logged = getRetaDoses();
+      const body = document.getElementById('pkDoseBody');
+      if (!logged.length) {
+        body.innerHTML = '<tr><td colspan="4" class="empty">None yet.</td></tr>';
+      } else {
+        body.innerHTML = logged.slice().reverse().map(d => {
+          const dateStr = new Date(d.t).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+          return `<tr>
+            <td>${dateStr}</td>
+            <td>${escapeHtml(d.name)}</td>
+            <td>${fmt(d.dose, 2)} ${d.doseUnit}</td>
+            <td>${fmt(d.mg, 3)} mg</td>
+          </tr>`;
+        }).join('');
+      }
+
+      const empty = document.getElementById('pkEmpty');
+      const svg = document.getElementById('pkSvg');
+      const legend = document.getElementById('pkLegend');
+      const meta = document.getElementById('pkMeta');
+      const horizon = parseFloat(document.getElementById('pkHorizon').value) || 14;
+      const mode = document.getElementById('pkRepeat').value;
+      const interval = parseFloat(document.getElementById('pkInterval').value) || 7;
+      const split = getSplitConfig();
+      document.getElementById('pkIntervalWrap').style.display = mode === 'custom' ? '' : 'none';
+      const showSplit = mode === 'split';
+      document.getElementById('pkSplitAWrap').style.display = showSplit ? '' : 'none';
+      document.getElementById('pkSplitTimeAWrap').style.display = showSplit ? '' : 'none';
+      document.getElementById('pkSplitBWrap').style.display = showSplit ? '' : 'none';
+      document.getElementById('pkSplitTimeBWrap').style.display = showSplit ? '' : 'none';
+      savePkPrefs();
+
+      if (!logged.length) {
+        empty.style.display = '';
+        svg.style.display = 'none';
+        legend.style.display = 'none';
+        ['pkNow','pkCavg','pkAuc7','pkAucMean','pkCmax','pkCmin'].forEach(id => {
+          document.getElementById(id).textContent = '—';
+        });
+        meta.textContent = 'Model: 1-compartment, first-order SC absorption. t½ 148 h, ka 0.065 h⁻¹, Vz/F 7.5 L (Coskun et al., Cell Metabolism 2022). Concentration in ng/mL.';
+        return;
+      }
+
+      empty.style.display = 'none';
+      svg.style.display = '';
+      legend.style.display = 'flex';
+
+      const now = Date.now();
+      const first = logged[0].t;
+      const start = first - 12 * 3.6e6;
+      const end = now + horizon * 86400000;
+      const allDoses = buildProjectedDoses(logged, now, horizon, mode, interval, split);
+
+      const stepMs = Math.max(2 * 3.6e6, Math.floor((end - start) / 360));
+      const samples = [];
+      for (let t = start; t <= end; t += stepMs) {
+        samples.push({ t, c: retaConcAt(t, allDoses) });
+      }
+      if (samples[samples.length - 1].t < end) {
+        samples.push({ t: end, c: retaConcAt(end, allDoses) });
+      }
+      const nowC = retaConcAt(now, logged);
+
+      const weekAgo = now - 7 * 86400000;
+      const weekSamples = [];
+      for (let t = weekAgo; t <= now; t += 2 * 3.6e6) {
+        weekSamples.push({ t, c: retaConcAt(t, logged) });
+      }
+      weekSamples.push({ t: now, c: nowC });
+      const auc7 = trapAuc(weekSamples);
+      const cavg7 = auc7 / 168;
+
+      const windowCs = samples.filter(s => s.t >= first && s.t <= end).map(s => s.c);
+      const cmax = windowCs.length ? Math.max(...windowCs) : 0;
+      const futureCs = samples.filter(s => s.t >= now && s.t <= end).map(s => s.c);
+      const cmin = futureCs.length ? Math.min(...futureCs) : 0;
+
+      const spanMs = Math.max(now - first, 86400000);
+      const spanWeeks = spanMs / (7 * 86400000);
+      const fullSamples = samples.filter(s => s.t >= first && s.t <= now);
+      const aucToNow = trapAuc(fullSamples.length ? fullSamples : samples);
+      const meanAucWeek = aucToNow / Math.max(spanWeeks, 1 / 7);
+
+      document.getElementById('pkNow').textContent = fmt(nowC, 1);
+      document.getElementById('pkCavg').textContent = fmt(cavg7, 1) + ' ng/mL';
+      document.getElementById('pkAuc7').textContent = fmt(auc7, 0);
+      document.getElementById('pkAucMean').textContent = fmt(meanAucWeek, 0);
+      document.getElementById('pkCmax').textContent = fmt(cmax, 1);
+      document.getElementById('pkCmin').textContent = fmt(cmin, 1);
+
+      drawPkChart(svg, samples, logged, allDoses.filter(d => d.virtual), now, start, end, cmax);
+
+      const totalMg = logged.reduce((s, d) => s + d.mg, 0);
+      const last = logged[logged.length - 1];
+      const splitNote = mode === 'split'
+        ? ` · projecting ${weekdayName(split.dayA)} ${formatClock(split.hourA, split.minuteA)} + ${weekdayName(split.dayB)} ${formatClock(split.hourB, split.minuteB)} (uses last logged mg on that weekday when available)`
+        : '';
+      meta.innerHTML =
+        `${logged.length} logged Reta dose${logged.length === 1 ? '' : 's'} · ${fmt(totalMg, 2)} mg total · last ${fmt(last.mg, 2)} mg` +
+        ` · 7-day AUC ${fmt(auc7, 0)} ng·h/mL · mean weekly AUC since first dose ${fmt(meanAucWeek, 0)} ng·h/mL` +
+        `${splitNote}.` +
+        `<br>1-compartment FO absorption fitted to Coskun 2022 (t½ 148 h, ka 0.065 h⁻¹, Vz/F 7.5 L). Population-average estimate — not individual plasma data.`;
+    }
+
+    function drawPkChart(svg, samples, logged, virtual, now, start, end, yPeak) {
+      const W = 760, H = 320;
+      const padL = 52, padR = 18, padT = 18, padB = 36;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const yMax = Math.max(yPeak * 1.12, 20);
+      const xOf = t => padL + ((t - start) / (end - start)) * plotW;
+      const yOf = c => padT + plotH - (c / yMax) * plotH;
+
+      const ticks = niceTicks(yMax, 5);
+      let grid = '';
+      ticks.forEach(v => {
+        const y = yOf(v);
+        grid += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#2d3a4f" stroke-width="1"/>`;
+        grid += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="#8b9bb4" font-size="11">${v}</text>`;
+      });
+
+      const dayMs = 86400000;
+      const spanDays = (end - start) / dayMs;
+      const xStep = spanDays > 40 ? 7 : spanDays > 20 ? 3 : 1;
+      const startDay = new Date(start);
+      startDay.setHours(0, 0, 0, 0);
+      let xLabels = '';
+      for (let t = startDay.getTime(); t <= end + dayMs; t += xStep * dayMs) {
+        if (t < start - dayMs / 2 || t > end + dayMs / 2) continue;
+        const x = xOf(t);
+        const d = new Date(t);
+        const label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        xLabels += `<text x="${x}" y="${H - 10}" text-anchor="middle" fill="#8b9bb4" font-size="11">${label}</text>`;
+        xLabels += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="#243044" stroke-width="1"/>`;
+      }
+
+      const past = samples.filter(s => s.t <= now);
+      const fut = samples.filter(s => s.t >= now);
+      const pathOf = arr => arr.map((s, i) => `${i ? 'L' : 'M'}${xOf(s.t).toFixed(1)},${yOf(s.c).toFixed(1)}`).join(' ');
+      const pastPath = pathOf(past);
+      const futPath = pathOf(fut);
+      const areaPath = pastPath +
+        ` L${xOf(past[past.length - 1].t).toFixed(1)},${yOf(0).toFixed(1)}` +
+        ` L${xOf(past[0].t).toFixed(1)},${yOf(0).toFixed(1)} Z`;
+
+      let doseMarks = logged.map(d => {
+        const x = xOf(d.t);
+        const c = retaConcAt(d.t, logged);
+        return `<line x1="${x}" y1="${yOf(0)}" x2="${x}" y2="${yOf(c)}" stroke="#f59e0b" stroke-width="1" opacity="0.45"/>
+          <circle cx="${x}" cy="${yOf(c)}" r="4" fill="#f59e0b"/>`;
+      }).join('');
+      doseMarks += virtual.map(d => {
+        if (d.t > end || d.t < start) return '';
+        const x = xOf(d.t);
+        return `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="#a78bfa" stroke-dasharray="3 4" stroke-width="1" opacity="0.5"/>`;
+      }).join('');
+
+      const nx = xOf(now);
+      const nowLine = `<line x1="${nx}" y1="${padT}" x2="${nx}" y2="${padT + plotH}" stroke="#22c55e" stroke-width="1.5"/>
+        <circle cx="${nx}" cy="${yOf(retaConcAt(now, getRetaDoses().concat(virtual)))}" r="4.5" fill="#22c55e"/>`;
+
+      svg.innerHTML = `
+        <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+        ${grid}
+        ${xLabels}
+        <path d="${areaPath}" fill="rgba(96,165,250,0.16)"/>
+        <path d="${pastPath}" fill="none" stroke="#60a5fa" stroke-width="2.4"/>
+        <path d="${futPath}" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-dasharray="6 5"/>
+        ${doseMarks}
+        ${nowLine}
+        <text x="${padL}" y="12" fill="#8b9bb4" font-size="11">ng/mL</text>
+      `;
+    }
+
+    function niceTicks(max, count) {
+      if (!(max > 0)) return [0];
+      const raw = max / count;
+      const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+      const n = raw / pow;
+      const step = n >= 5 ? 5 * pow : n >= 2 ? 2 * pow : pow;
+      const ticks = [];
+      for (let v = 0; v <= max + step / 20; v += step) ticks.push(Number(v.toPrecision(6)));
+      return ticks;
+    }
+
+    function savePkPrefs() {
+      try {
+        localStorage.setItem('peptide_calc_pk_prefs', JSON.stringify({
+          horizon: document.getElementById('pkHorizon').value,
+          repeat: document.getElementById('pkRepeat').value,
+          interval: document.getElementById('pkInterval').value,
+          splitA: document.getElementById('pkSplitA').value,
+          splitB: document.getElementById('pkSplitB').value,
+          splitTimeA: document.getElementById('pkSplitTimeA').value,
+          splitTimeB: document.getElementById('pkSplitTimeB').value,
+          splitTime: document.getElementById('pkSplitTimeA').value
+        }));
+      } catch (e) { /* ignore */ }
+    }
+    function loadPkPrefs() {
+      try {
+        const p = JSON.parse(localStorage.getItem('peptide_calc_pk_prefs') || 'null');
+        if (!p) return;
+        if (p.horizon) document.getElementById('pkHorizon').value = p.horizon;
+        if (p.repeat) document.getElementById('pkRepeat').value = p.repeat;
+        if (p.interval) document.getElementById('pkInterval').value = p.interval;
+        if (p.splitA != null) document.getElementById('pkSplitA').value = String(p.splitA);
+        if (p.splitB != null) document.getElementById('pkSplitB').value = String(p.splitB);
+        const timeA = p.splitTimeA || p.splitTime;
+        const timeB = p.splitTimeB || p.splitTime;
+        if (timeA) document.getElementById('pkSplitTimeA').value = timeA;
+        if (timeB) document.getElementById('pkSplitTimeB').value = timeB;
+      } catch (e) { /* ignore */ }
+    }
+    loadPkPrefs();
+    ['pkHorizon','pkRepeat','pkInterval','pkSplitA','pkSplitB','pkSplitTimeA','pkSplitTimeB'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('change', renderPk);
+      el.addEventListener('input', renderPk);
+    });
+  </script>
+</body>
+</html>
